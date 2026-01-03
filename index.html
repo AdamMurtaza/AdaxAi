@@ -1,38 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Fully Local AI</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        #chat-box { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
+        #status { font-size: 0.8em; color: #666; margin-bottom: 10px; }
+    </style>
+</head>
 <body>
-    <h1>My Local AI Bot</h1>
+
+    <h2>Local Browser AI</h2>
+    <div id="status">Status: Loading engine...</div>
     <div id="chat-box"></div>
-    <input type="text" id="user-input" placeholder="Type here...">
-    <button onclick="chat()">Send</button>
+    
+    <input type="text" id="user-input" placeholder="Ask me something..." style="width: 80%;">
+    <button onclick="sendMsg()" id="send-btn" disabled>Send</button>
 
     <script type="module">
+        // This imports the brain directly into the browser
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-        // 1. Select a model that fits in a browser (Phi-3 is small and fast)
-        const selectedModel = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
-        
-        // 2. Initialize the engine
+        const statusLabel = document.getElementById("status");
+        const chatBox = document.getElementById("chat-box");
+        const btn = document.getElementById("send-btn");
+
+        // We use a tiny model so it downloads fast (Llama 3.2 1B)
+        const model = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
         const engine = new webllm.MLCEngine();
-        
-        // Loading message
-        document.getElementById('chat-box').innerText = "Loading AI model... (This runs on your GPU!)";
-        engine.reload(selectedModel).then(() => {
-            document.getElementById('chat-box').innerText = "AI Ready! Say hello.";
+
+        // Update status as it loads
+        engine.setInitProgressCallback((report) => {
+            statusLabel.innerText = report.text;
         });
 
-        window.chat = async function() {
-            const input = document.getElementById('user-input').value;
-            const messages = [
-                { role: "user", content: input }
-            ];
-
-            const reply = await engine.chat.completions.create({
-                messages,
-            });
-            
-            document.getElementById('chat-box').innerText = reply.choices[0].message.content;
+        async function init() {
+            await engine.reload(model);
+            statusLabel.innerText = "Status: AI is Ready (Running on your GPU!)";
+            btn.disabled = false;
         }
+
+        window.sendMsg = async () => {
+            const input = document.getElementById("user-input").value;
+            chatBox.innerHTML += `<div><b>You:</b> ${input}</div>`;
+            document.getElementById("user-input").value = "";
+
+            const messages = [{ role: "user", content: input }];
+            
+            let aiResponse = "";
+            const reply = await engine.chat.completions.create({ messages });
+            aiResponse = reply.choices[0].message.content;
+
+            chatBox.innerHTML += `<div><b>AI:</b> ${aiResponse}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        init();
     </script>
 </body>
 </html>
