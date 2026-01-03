@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>My Local AI Bot</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="user-input" placeholder="Type here...">
+    <button onclick="chat()">Send</button>
+
+    <script type="module">
+        import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+        // 1. Select a model that fits in a browser (Phi-3 is small and fast)
+        const selectedModel = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
+        
+        // 2. Initialize the engine
+        const engine = new webllm.MLCEngine();
+        
+        // Loading message
+        document.getElementById('chat-box').innerText = "Loading AI model... (This runs on your GPU!)";
+        engine.reload(selectedModel).then(() => {
+            document.getElementById('chat-box').innerText = "AI Ready! Say hello.";
+        });
+
+        window.chat = async function() {
+            const input = document.getElementById('user-input').value;
+            const messages = [
+                { role: "user", content: input }
+            ];
+
+            const reply = await engine.chat.completions.create({
+                messages,
+            });
+            
+            document.getElementById('chat-box').innerText = reply.choices[0].message.content;
+        }
+    </script>
+</body>
+</html>
